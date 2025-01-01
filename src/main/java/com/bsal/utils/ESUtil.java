@@ -10,6 +10,7 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -23,9 +24,13 @@ import org.elasticsearch.common.xcontent.XContentType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.metrics.*;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Map;
 
 public class ESUtil {
 
@@ -87,9 +92,9 @@ public class ESUtil {
         indexRequest.id(prodId);
         try {
             indexRequest.source(new ObjectMapper().writeValueAsString(product), XContentType.JSON);
-//            IndexResponse indexResponse = getConnClient().index(indexRequest, RequestOptions.DEFAULT);
-//            System.out.println("Response id: " + indexResponse.getId());
-//            System.out.println("Response name: " + indexResponse.getResult().name());
+            IndexResponse indexResponse = getConnClient().index(indexRequest, RequestOptions.DEFAULT);
+            System.out.println("Response id: " + indexResponse.getId());
+            System.out.println("Response name: " + indexResponse.getResult().name());
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
         }
@@ -119,6 +124,45 @@ public class ESUtil {
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
             System.out.println("Delete Index failed: " + indexName);
+        }
+    }
+
+    public void aggregationInElasticDb() {
+        SearchRequest searchRequest = new SearchRequest();
+        searchRequest.indices("products");
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+
+        searchSourceBuilder.aggregation(AggregationBuilders.sum("sum").field("price"));
+        searchSourceBuilder.aggregation(AggregationBuilders.avg("avg").field("price"));
+        searchSourceBuilder.aggregation(AggregationBuilders.min("min").field("price"));
+        searchSourceBuilder.aggregation(AggregationBuilders.max("max").field("price"));
+        searchSourceBuilder.aggregation(AggregationBuilders.cardinality("cardinality").field("price"));
+        searchSourceBuilder.aggregation(AggregationBuilders.count("count").field("price"));
+        searchRequest.source(searchSourceBuilder);
+        try {
+            SearchResponse searchResponse = null;
+            searchResponse = getConnClient().search(searchRequest, RequestOptions.DEFAULT);
+            Sum sum = searchResponse.getAggregations().get("sum");
+            double valueSum = sum.getValue();
+            System.out.println("Sum: " + valueSum);
+            Avg avg = searchResponse.getAggregations().get("avg");
+            double valueAvg = avg.getValue();
+            System.out.println("Avg: " + valueAvg);
+            Min min = searchResponse.getAggregations().get("min");
+            double minOutput = min.getValue();
+            System.out.println("Min: " + minOutput);
+            Max max = searchResponse.getAggregations().get("max");
+            double maxOutput = max.getValue();
+            System.out.println("Max: " + maxOutput);
+            Cardinality cardinality = searchResponse.getAggregations().get("cardinality");
+            long valueCardinality = cardinality.getValue();
+            System.out.println("Cardinality: " + valueCardinality);
+            ValueCount count = searchResponse.getAggregations().get("count");
+            long valueCount = count.getValue();
+            System.out.println("Count: " + valueCount);
+        } catch (IOException ex) {
+            System.out.println(ex.getMessage());
         }
     }
 }

@@ -13,7 +13,8 @@ public class Main {
         // Searching
         esUtil.searchElasticDb();
         // deleting
-        esUtil.deleteRecord();
-        esUtil.deleteIndex();
+//        esUtil.deleteRecord();
+//        esUtil.deleteIndex();
+        esUtil.aggregationInElasticDb();
     }
 }
