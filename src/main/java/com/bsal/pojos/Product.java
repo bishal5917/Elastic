@@ -8,7 +8,7 @@ import lombok.*;
 @Getter
 @Setter
 public class Product {
-    private Integer id;
+    private String id;
     private String name;
     private String description;
     private double price;
